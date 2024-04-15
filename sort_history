@@ -1,0 +1,32 @@
+HISTSORTSKIPLINES=10
+
+
+function sort_history_file {
+    mv $HISTFILE ${HISTFILE}.bak
+    cat ${HISTFILE}.bak | sed -E 's/\s+/ /g' | sort -u > $HISTFILE
+}
+
+
+function sort_history_session {
+    history_session=$(history | head -n -$HISTSORTSKIPLINES | sed -E 's/^\s*[0-9]+\s+([[:alnum:]]+)/\1/; s/\s+/ /g' | sort -u)
+    history_session+=$(history | tail -n $HISTSORTSKIPLINES  | sed -E 's/^\s*[0-9]+\s+([[:alnum:]]+)/\1/; s/\s+/ /g' | sort -u)
+}
+
+
+function sort_history {
+    echo "Skip sorting the last $HISTSORTSKIPLINES lines"
+    echo "To change the number of skipped lines, set the 'HISTSORTSKIPLINES' environment variable"
+
+    skip_lines_number=$(history | wc -l)
+
+    history -a
+
+    mv $HISTFILE ${HISTFILE}.bak
+    cat ${HISTFILE}.bak | head -n -$skip_lines_number | sed -E 's/\s+/ /g' | sort -u > $HISTFILE
+
+    sort_history_session
+    printf '%s\n' "$history_session" >> $HISTFILE
+
+    history -c
+    history -r
+}

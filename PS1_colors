@@ -1,0 +1,523 @@
+#! /bin/env bash
+
+# Set PS1 colors
+
+THIS_FILE="$HOME/.bashrc.d/PS1_colors"
+
+#############################
+# COLORS
+
+COLORS=(
+NONE_COLOR=256
+
+## Base colors
+RED_DARK=1
+RED=9
+GREEN_DARK=2
+GREEN=10
+BLUE=4
+BLUE_LIGHT=12
+YELLOW=3
+YELLOW_LIGHT=11
+PURPLE=5
+PURPLE_LIGHT=13
+CYAN=6
+CYAN_LIGHT=14
+GREY_LIGHT=7
+GREY_DARK=8
+WHITE=15
+WHITE_SOFT=254
+BLACK=16
+
+## Additional colors
+PINK=199
+MAGENTA=207
+MAGENTA_LIGHT=213
+ROSE=205
+SALMON=211
+TAFFY=212
+VIOLET=141
+INDIGO=105
+LAVENDER=111
+AZURE=39
+AZURE_LIGHT=45
+BLUE_PALE=117
+AQUA=123
+SCARLET=196
+ORANGE=202
+AMBER=214
+GOLD=220
+PISTACHIO=71
+JADE=107
+TEA=150
+ALMOND=173
+CHOCO=174
+)
+
+
+# Set color names
+for color in ${COLORS[@]};do export $color ;done
+
+COLOR_NAMES=(${COLORS[@]%=*})
+
+get_color_number () { set | grep "^${1^^}=" ;}
+
+
+
+#############################
+# DEFAULTS
+LOCAL_PS1_COLORS_CONFIG="$HOME/.my_ps1_colors"
+
+my_ps1_colors () {
+RESET="\[\033[0m\]"
+MIDDLE_DOT="\[\033[38;5;${GREY_DARK}m\]·${RESET}"
+
+DEFAULT_LEADING_SPACE=" "
+DEFAULT_TRAILING_SPACE=""
+
+DEFAULT_TEXT_COLOR_1=$GREEN
+DEFAULT_BACKGROUND_COLOR_1=$NONE_COLOR
+DEFAULT_TEXT_COLOR_2=$CYAN
+DEFAULT_BACKGROUND_COLOR_2=$NONE_COLOR
+}
+
+
+
+#############################
+
+display_help () {
+    echo -e " \033[4mUsage:\033[0m $ set_colors [COMMAND]
+    or: $ set_colors (text_color_1 | _ ) [background_color_1 | _] [text_color_2 | _] [background_color_2 | _]
+    or: $ <predefined schema name>
+
+    To set PS1 colors, provide at least one color name or number(0-256).
+    _ keeps the value of the parameter.
+
+    Defaults are specified in the 'DEFAULTS' section of the 'PS_colors' file.
+    Or in the 'LOCAL_PS1_COLORS_CONFIG' file ($LOCAL_PS1_COLORS_CONFIG).
+    The latter takes precedence.
+
+
+    \033[4mCommands:\033[0m
+        reset               reset to defaults
+        reset init          reset to initial configuration (alternative: call 'my_ps1_colors')
+        list colors [l]     list predefined color names
+        list schemas [l]    list predefined color schemas
+        save                save prefernces to the local config ($LOCAL_PS1_COLORS_CONFIG)
+        help                display this help
+
+    \033[4mExamples:\033[0m
+        Select colors
+            $ set_colors red
+            $ set_colors 16 gold black white
+            $ set_colors _ _ cyan _
+
+        Schema
+            $ gold
+            $ tea_b     # background color
+            $ dir_blue  # path color
+
+        Commands
+            $ set_colors reset
+            $ set_colors list colors
+            $ set_colors list schemas l
+    "
+}
+
+
+list_colors () {
+    if [[ $1 ]]; then
+        echo ${COLOR_NAMES[@],} | tr '[:lower:][:upper:]' '[:upper:][:lower:]' | tr ' ' '\n'
+    else
+        echo ${COLOR_NAMES[@],} | tr '[:lower:][:upper:]' '[:upper:][:lower:]'
+    fi
+}
+
+
+list_schemas () {
+    SCHEMA_NAMES=(${schemas[@]%% *})
+    if [[ $1 ]]; then
+        echo ${SCHEMA_NAMES[@],,} | tr ' ' '\n'
+    else
+        echo ${SCHEMA_NAMES[@],,}
+    fi
+}
+
+
+validate_color_name () {
+    for color in ${COLOR_NAMES[@],,}; do
+        [[ $color = ${1,,} ]] && return
+    done
+    echo -e "\033[01;31m[Error]\033[0m Unknown color name: $1 \n Available colors: "
+    list_colors
+    return 1
+}
+
+
+validate_color_number () {
+    if [[ $1 -gt 256 ]]; then
+        echo -e "\033[01;31m[Error]\033[0m Wrong parameter. The color number must be in the range 0-256"
+        return 1
+    fi
+}
+
+
+set_PS1_colors () {
+    COLOR_1="\[\033[38;5;${TEXT_COLOR_1};48;5;${BACKGROUND_COLOR_1}m\]"
+    COLOR_2="\[\033[38;5;${TEXT_COLOR_2};48;5;${BACKGROUND_COLOR_2}m\]"
+
+    PS1="\n${COLOR_1}${LEADING_SPACE}\u@\h${TRAILING_SPACE}${RESET}:${COLOR_2}\w${RESET} \n\$${MIDDLE_DOT}"
+}
+
+
+save_PS1_colors () {
+    echo "RESET=\"$RESET\"" > $LOCAL_PS1_COLORS_CONFIG
+    echo "MIDDLE_DOT=\"$MIDDLE_DOT\"" >> $LOCAL_PS1_COLORS_CONFIG
+    echo "DEFAULT_LEADING_SPACE=\"$LEADING_SPACE\""  >> $LOCAL_PS1_COLORS_CONFIG
+    echo "DEFAULT_TRAILING_SPACE=\"$TRAILING_SPACE\""  >> $LOCAL_PS1_COLORS_CONFIG
+    echo "DEFAULT_TEXT_COLOR_1=$TEXT_COLOR_1" >> $LOCAL_PS1_COLORS_CONFIG
+    echo "DEFAULT_BACKGROUND_COLOR_1=$BACKGROUND_COLOR_1" >> $LOCAL_PS1_COLORS_CONFIG
+    echo "DEFAULT_TEXT_COLOR_2=$TEXT_COLOR_2" >> $LOCAL_PS1_COLORS_CONFIG
+    echo "DEFAULT_BACKGROUND_COLOR_2=$BACKGROUND_COLOR_2" >> $LOCAL_PS1_COLORS_CONFIG
+    echo -e "\033[01;32mSaved to $LOCAL_PS1_COLORS_CONFIG \033[m \n"
+    cat $LOCAL_PS1_COLORS_CONFIG
+}
+
+
+set_colors () {
+    # Print help
+    [[ -z $1 || $1 =~ "help" ]] && display_help && return
+
+    # Reset to defaults
+    if [[ $1 = "reset" ]]; then
+        my_ps1_colors
+        [[ -f $LOCAL_PS1_COLORS_CONFIG && $2 != "init" ]] && source $LOCAL_PS1_COLORS_CONFIG
+        TEXT_COLOR_1=$DEFAULT_TEXT_COLOR_1 ; BACKGROUND_COLOR_1=$DEFAULT_BACKGROUND_COLOR_1
+        TEXT_COLOR_2=$DEFAULT_TEXT_COLOR_2 ; BACKGROUND_COLOR_2=$DEFAULT_BACKGROUND_COLOR_2
+        LEADING_SPACE=$DEFAULT_LEADING_SPACE; TRAILING_SPACE=$DEFAULT_TRAILING_SPACE
+        set_PS1_colors
+        return
+    fi
+
+    # List predefined color names/ schemas
+    if [[ $1 = "list" ]]; then
+        if [[ $2 = "colors" ]]; then
+            list_colors $3
+            return
+        elif [[ $2 = "schemas" ]]; then
+            list_schemas $3
+            return
+        else
+            echo -e "\033[01;31m[Error]\033[0m Wrong option for the 'list' command ($2). Available options: \n\tcolors \n\tschemas"
+            return 1
+        fi
+    fi
+
+    # Save preferences
+    if [[ $1 = "save" ]]; then
+        save_PS1_colors
+        return
+    fi
+
+    # Text color 1
+    if [[ $1 =~ ^[0-9]+$ ]]; then
+        validate_color_number $1 || return 1
+        TEXT_COLOR_1=$1
+    elif [[ $1 = "_" ]]; then
+        true
+    else
+        validate_color_name $1 || return 1
+        C1=${1^^} && TEXT_COLOR_1=${!C1}
+    fi
+
+    # Background color 1
+    if [[ -n $2 ]]; then
+        if [[ $2 =~ ^[0-9]{1,3}$ ]]; then
+            validate_color_number $2 || return 1
+            BACKGROUND_COLOR_1=$2
+            LEADING_SPACE=" "; TRAILING_SPACE=" "
+            if [[ $2 = 256 ]]; then TRAILING_SPACE=$DEFAULT_TRAILING_SPACE ;fi
+        elif [[ $2 = "_" ]]; then
+            true
+        else
+            validate_color_name $2 || return 1
+            C2=${2^^} && BACKGROUND_COLOR_1=${!C2}
+            LEADING_SPACE=" "; TRAILING_SPACE=" "
+            if [[ $C2 = "NONE_COLOR" ]]; then TRAILING_SPACE=$DEFAULT_TRAILING_SPACE ;fi
+        fi
+    else
+        BACKGROUND_COLOR_1=$DEFAULT_BACKGROUND_COLOR_1
+        LEADING_SPACE=$DEFAULT_LEADING_SPACE; TRAILING_SPACE=$DEFAULT_TRAILING_SPACE
+    fi
+
+    # Text color 2
+    if [[ -n $3 ]]; then
+        if [[ $3 =~ ^[0-9]{1,3}$ ]]; then
+            validate_color_number $3 || return 1
+            TEXT_COLOR_2=$3
+        elif [[ $3 = "_" ]]; then
+            true
+        else
+            validate_color_name $3 || return 1
+            C3=${3^^} && TEXT_COLOR_2=${!C3}
+        fi
+    else
+        TEXT_COLOR_2=$DEFAULT_TEXT_COLOR_2
+    fi
+
+    # Background color 2
+    if [[ -n $4 ]]; then
+        if [[ $4 =~ ^[0-9]{1,3}$ ]]; then
+            validate_color_number $4 || return 1
+            BACKGROUND_COLOR_2=$4
+        elif [[ $4 = "_" ]]; then
+            true
+        else
+            validate_color_name $4 || return 1
+            C4=${4^^} && BACKGROUND_COLOR_2=${!C4}
+        fi
+    else
+        BACKGROUND_COLOR_2=$DEFAULT_BACKGROUND_COLOR_2
+    fi
+
+    set_PS1_colors
+}
+
+
+set_colors reset
+
+
+
+
+#############################
+# PREDEFINED SCHEMAS
+
+schemas=(
+# Text
+"red () { set_colors RED NONE_COLOR CHOCO NONE_COLOR ;}"
+"gold () { set_colors GOLD NONE_COLOR TEA NONE_COLOR ;}"
+"orange () { set_colors ORANGE NONE_COLOR _ _ ;}"
+"amber () { set_colors AMBER NONE_COLOR _ _ ;}"
+"yellow () { set_colors YELLOW_LIGHT NONE_COLOR _ _ ;}"
+"green () { set_colors GREEN NONE_COLOR _ _ ;}"
+"pista () { set_colors PISTACHIO NONE_COLOR CHOCO NONE_COLOR ;}"
+"jade () { set_colors JADE NONE_COLOR ALMOND NONE_COLOR ;}"
+"tea () { set_colors TEA NONE_COLOR _ _ ;}"
+"azure () { set_colors AZURE_LIGHT NONE_COLOR _ _ ;}"
+"blue () { set_colors BLUE_PALE NONE_COLOR CHOCO NONE_COLOR ;}"
+"aqua () { set_colors AQUA NONE_COLOR _ _ ;}"
+"choco () { set_colors CHOCO NONE_COLOR _ _ ;}"
+"almond () { set_colors ALMOND NONE_COLOR BLUE_PALE NONE_COLOR ;}"
+"lavender () { set_colors LAVENDER NONE_COLOR _ _ ;}"
+"indigo () { set_colors INDIGO NONE_COLOR _ _ ;}"
+"violet () { set_colors VIOLET NONE_COLOR _ _ ;}"
+"pink () { set_colors PINK NONE_COLOR _ _ ;}"
+"taffy () { set_colors TAFFY NONE_COLOR _ _ ;}"
+"magenta () { set_colors MAGENTA NONE_COLOR _ _ ;}"
+"rose () { set_colors ROSE NONE_COLOR _ _ ;}"
+"salmon () { set_colors SALMON NONE_COLOR _ _ ;}"
+
+# Backgrounds
+"red_b () { set_colors WHITE RED _ _ ;}"
+"orange_b () { set_colors BLACK ORANGE _ _ ;}"
+"orange_w () { set_colors WHITE ORANGE _ _ ;}"
+"gold_b () { set_colors BLACK GOLD _ _ ;}"
+"amber_b () { set_colors BLACK AMBER _ _ ;}"
+"yellow_b () { set_colors BLACK YELLOW_LIGHT _ _ ;}"
+"green_b () { set_colors BLACK PISTACHIO _ _ ;}"
+"jade_b () { set_colors BLACK JADE _ _ ;}"
+"tea_b () { set_colors BLACK TEA _ _ ;}"
+"choco_w () { set_colors 253 CHOCO _ _ ;}"
+"choco_b () { set_colors BLACK CHOCO _ _ ;}"
+"almond_w () { set_colors 253 ALMOND _ _ ;}"
+"almond_b () { set_colors BLACK ALMOND _ _ ;}"
+"violet_b () { set_colors BLACK VIOLET _ _ ;}"
+"violet_w () { set_colors 254 99 _ _ ;}"
+"indigo_b () { set_colors BLACK INDIGO _ _ ;}"
+"lavender_b () { set_colors BLACK LAVENDER _ _ ;}"
+"azure_b () { set_colors BLACK AZURE_LIGHT _ _ ;}"
+"cyan_w () { set_colors 255 CYAN _ _ ;}"
+"blue_b () { set_colors BLACK BLUE_PALE _ _ ;}"
+"aqua_b () { set_colors BLACK AQUA _ _ ;}"
+"purple_w () { set_colors 254 PURPLE _ _ ;}"
+"taffy_b () { set_colors BLACK TAFFY _ _ ;}"
+"pink_b () { set_colors BLACK PINK _ _ ;}"
+"pink_w () { set_colors 255 PINK _ _ ;}"
+"magenta_b () { set_colors BLACK MAGENTA_LIGHT _ _ _ ;}"
+"rose_b () { set_colors BLACK ROSE _ _ ;}"
+"rose_w () { set_colors 255 ROSE _ _ ;}"
+"salmon_b () { set_colors BLACK SALMON _ _ ;}"
+
+# Path
+"dir_choco () { set_colors _ _ CHOCO NONE_COLOR ;}"
+"dir_almond () { set_colors _ _ ALMOND NONE_COLOR ;}"
+"dir_salmon () { set_colors _ _ SALMON NONE_COLOR ;}"
+"dir_violet () { set_colors _ _ VIOLET NONE_COLOR ;}"
+"dir_indigo () { set_colors _ _ INDIGO NONE_COLOR ;}"
+"dir_lavender () { set_colors _ _ LAVENDER NONE_COLOR ;}"
+"dir_blue () { set_colors _ _ BLUE_PALE NONE_COLOR ;}"
+"dir_aqua () { set_colors _ _ AQUA NONE_COLOR ;}"
+"dir_gold () { set_colors _ _ GOLD NONE_COLOR ;}"
+"dir_yellow () { set_colors _ _ YELLOW_LIGHT NONE_COLOR ;}"
+"dir_pista () { set_colors _ _ PISTACHIO NONE_COLOR ;}"
+"dir_jade () { set_colors _ _ JADE NONE_COLOR ;}"
+"dir_tea () { set_colors _ _ TEA NONE_COLOR ;}"
+)
+
+
+# Set schemas
+for schema in "${schemas[@]}"; do eval $schema ;done
+
+
+
+
+#############################
+# LS_COLORS
+
+display_help_ls_colors () {
+    echo -e " \033[4mUsage:\033[0m $ set_ls_colors [COMMAND]
+    or: $ set_ls_colors file_type text_color [background_color | _]
+
+    To update LS_COLORS, provide file type and at least one color name or number(0-256).
+    _ keeps the value of the parameter.
+
+    To check predefined file types, use:
+        $ dircolors -p
+
+
+    \033[4mCommands:\033[0m
+        reset           reset to saved user defaults ($LOCAL_LS_COLORS_CONFIG)
+        reset init      reset to initial user configuration (alternative: call 'my_ls_colors')
+        reset system    reset to system defaults
+        list [l]        list predefined color names
+        save            save prefernces to the local config ($LOCAL_LS_COLORS_CONFIG)
+        help            display this help
+
+    \033[4mExamples:\033[0m
+        Set colors
+            $ set_ls_colors ln cyan
+            $ set_ls_colors di 16 yellow_light
+            $ set_ls_colors di tea _
+
+        Commands
+            $ set_ls_colors reset
+            $ set_ls_colors list l
+    "
+}
+
+
+escape_symbols () {
+    echo $1 | sed 's/\*/\\*/g; s/\./\\./g'
+}
+
+
+save_ls_colors () {
+    echo "LS_COLORS=\"$LS_COLORS\"" > $LOCAL_LS_COLORS_CONFIG
+    echo -e "\033[01;32mSaved to $LOCAL_LS_COLORS_CONFIG \033[0m"
+    cat $LOCAL_LS_COLORS_CONFIG
+}
+
+
+set_ls_colors () {
+    # Print help
+    [[ -z $1 || $1 =~ "help" ]] && display_help_ls_colors && return
+
+    # Reset to defaults
+    if [[ $1 = "reset" ]]; then
+        if [[ $2 = "system" ]]; then
+            export LS_COLORS="$(dircolors -c | cut -d' ' -f3 | tr -d "'" )"
+            echo -e "\033[01;32mReset to system defaults. \033[0m"
+            echo "LS_COLOR=$LS_COLORS"
+        elif [[ $2 = "init" ]]; then
+            echo -e "\033[01;32mReset to initial user configuration.\033[m"
+            my_ls_colors
+        else
+            if [[ -f $LOCAL_LS_COLORS_CONFIG ]]; then
+                source $LOCAL_LS_COLORS_CONFIG
+                echo -e "\033[01;32mReset to user default preferences.\033[m (Config: $LOCAL_LS_COLORS_CONFIG)"
+                echo "LS_COLOR=$LS_COLORS"
+            else
+                echo -e "\033[01;32m$LOCAL_LS_COLORS_CONFIG file not found."
+                echo -e "Reset to initial user configuration.\033[m"
+                my_ls_colors
+            fi
+        fi
+
+        return
+    fi
+
+    # List predefined color names
+    if [[ $1 = "list" ]]; then
+        list_colors $2
+        return
+    fi
+
+    # Save preferences
+    if [[ $1 = "save" ]]; then
+        save_ls_colors
+        return
+    fi
+
+    # File type
+    if [[ -n $1 ]]; then
+        TYPE="${1,,}"
+        TYPE_ESC="$(escape_symbols $TYPE)"
+    else
+        echo -e "\033[01;31m[Error]\033[0m Missing parameter. Provide file type."
+        return 1
+    fi
+
+    # Text color
+    if [[ -n $2 ]]; then
+        if [[ $2 =~ ^[0-9]{1,3}$ ]]; then
+            validate_color_number $2 || return 1
+            TEXT_COLOR=$2
+        else
+            validate_color_name $2 || return 1
+            C2=${2^^} && TEXT_COLOR=${!C2}
+        fi
+    else
+        echo -e "\033[01;31m[Error]\033[0m Missing parameter. Provide the color name or number(0-255)"
+        return 1
+    fi
+
+    # Background color
+    if [[ -n $3 ]]; then
+        if [[ $3 =~ ^[0-9]{1,3}$ ]]; then
+            validate_color_number $3 || return 1
+            BACKGROUND=$3
+        elif [[ $3 = "_" ]]; then
+            true
+        else
+            validate_color_name $3 || return 1
+            C3=${3^^} && BACKGROUND=${!C3}
+        fi
+    else
+        BACKGROUND=$NONE_COLOR
+    fi
+
+
+    LS_COLORS="$(echo $LS_COLORS | sed -E 's/'$TYPE_ESC'=(.{1,3};){1,5}.{1,3}://g')$TYPE=38;5;$TEXT_COLOR;48;5;$BACKGROUND:"
+}
+
+
+
+
+#############################
+# LS_COLORS preferences
+
+LOCAL_LS_COLORS_CONFIG="$HOME/.my_ls_colors"
+
+my_ls_colors () {
+    set_ls_colors di AZURE      # Directories
+    set_ls_colors ln AQUA       # Links
+
+    #yaml
+    set_ls_colors '*.yaml' blue_pale
+    set_ls_colors '*.yml' blue_pale
+
+    echo "LS_COLOR=$LS_COLORS"
+}
+
+
+set_ls_colors reset >/dev/null
