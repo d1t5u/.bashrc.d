@@ -75,10 +75,10 @@ MIDDLE_DOT="\[\033[38;5;${GREY_DARK}m\]·${RESET}"
 DEFAULT_LEADING_SPACE=" "
 DEFAULT_TRAILING_SPACE=""
 
-DEFAULT_TEXT_COLOR_1=$PISTACHIO
-DEFAULT_BACKGROUND_COLOR_1=$NONE_COLOR
-DEFAULT_TEXT_COLOR_2=$CYAN
-DEFAULT_BACKGROUND_COLOR_2=$NONE_COLOR
+DEFAULT_COLOR_1=$PISTACHIO
+DEFAULT_COLOR_2=$NONE_COLOR
+DEFAULT_COLOR_3=$CYAN
+DEFAULT_COLOR_4=$NONE_COLOR
 }
 
 
@@ -87,7 +87,7 @@ DEFAULT_BACKGROUND_COLOR_2=$NONE_COLOR
 
 display_help () {
     echo -e " \033[4mUsage:\033[0m $ set_colors [COMMAND]
-    or: $ set_colors (text_color_1 | _ ) [background_color_1 | _] [text_color_2 | _] [background_color_2 | _] [classic]
+    or: $ set_colors (color_1 | _ ) [color_2 | _] [color_3 | _] [color_4 | _] [classic]
     or: $ <predefined schema name> [classic]
 
     To set PS1 colors, provide at least one color name or number(0-256).
@@ -166,22 +166,30 @@ validate_color_number () {
 
 
 set_PS1_colors_classic () {
-    COLOR_1="\[\033[38;5;${TEXT_COLOR_1};48;5;${BACKGROUND_COLOR_1}m\]"
-    COLOR_2="\[\033[38;5;${TEXT_COLOR_2};48;5;${BACKGROUND_COLOR_2}m\]"
+    ## STYLE_1 - the first part of PS1 (user@host)
+    ##   COLOR_1 - text color, COLOR_2 - background color
+    ## STYLE_2 - the second part of PS1 (path)
+    ##   COLOR_3 - text color, COLOR_4 - background color
+    STYLE_1="\[\033[38;5;${COLOR_1};48;5;${COLOR_2}m\]"
+    STYLE_2="\[\033[38;5;${COLOR_3};48;5;${COLOR_4}m\]"
 
-    PS1="\n${COLOR_1}${LEADING_SPACE}\u@\h${TRAILING_SPACE}${RESET}:${COLOR_2}\w${RESET} \n\$${MIDDLE_DOT}"
+    PS1="\n${STYLE_1}${LEADING_SPACE}\u@\h${TRAILING_SPACE}${RESET}:${STYLE_2}\w${RESET} \n\$${MIDDLE_DOT}"
 }
 
 
 set_PS1_colors () {
-    COLOR_1="\[\033[38;5;${BACKGROUND_COLOR_1};48;5;${TEXT_COLOR_1}m\]"
-    COLOR_2="\[\033[38;5;${BACKGROUND_COLOR_2};48;5;${TEXT_COLOR_2}m\]"
+    ## STYLE_1 - the first part of PS1 (user@host)
+    ##   COLOR_1 - background color, COLOR_2 - text color
+    ## STYLE_2 - the second part of PS1 (path)
+    ##   COLOR_3 - background color, COLOR_4 - text color
+    STYLE_1="\[\033[38;5;${COLOR_2};48;5;${COLOR_1}m\]"
+    STYLE_2="\[\033[38;5;${COLOR_4};48;5;${COLOR_3}m\]"
 
-    LEADING_SYMBOL="\[\033[38;5;${TEXT_COLOR_1};48;5;${NONE_COLOR}m\]"     ## \uE0B6
-    DELIMITER="\[\033[38;5;${TEXT_COLOR_1};48;5;${TEXT_COLOR_2}m\]"  ## \uE0BC
-    ENDING_SYMBOL="\[\033[38;5;${TEXT_COLOR_2};48;5;${NONE_COLOR}m\]"      ## \uE0B0
+    LEADING_SYMBOL="\[\033[38;5;${COLOR_1};48;5;${NONE_COLOR}m\]"    ## \uE0B6
+    DELIMITER="\[\033[38;5;${COLOR_1};48;5;${COLOR_3}m\]"            ## \uE0BC
+    ENDING_SYMBOL="\[\033[38;5;${COLOR_3};48;5;${NONE_COLOR}m\]"     ## \uE0B0
 
-    PS1="\n${LEADING_SYMBOL}${RESET}${COLOR_1}\u@\h${DELIMITER}${RESET}${COLOR_2}\w${RESET}${ENDING_SYMBOL}${RESET}\n\$${MIDDLE_DOT}"
+    PS1="\n${LEADING_SYMBOL}${RESET}${STYLE_1}\u@\h${DELIMITER}${RESET}${STYLE_2}\w${RESET}${ENDING_SYMBOL}${RESET}\n\$${MIDDLE_DOT}"
 }
 
 
@@ -190,10 +198,10 @@ save_PS1_colors () {
     echo "MIDDLE_DOT=\"$MIDDLE_DOT\"" >> $LOCAL_PS1_COLORS_CONFIG
     echo "DEFAULT_LEADING_SPACE=\"$LEADING_SPACE\""  >> $LOCAL_PS1_COLORS_CONFIG
     echo "DEFAULT_TRAILING_SPACE=\"$TRAILING_SPACE\""  >> $LOCAL_PS1_COLORS_CONFIG
-    echo "DEFAULT_TEXT_COLOR_1=$TEXT_COLOR_1" >> $LOCAL_PS1_COLORS_CONFIG
-    echo "DEFAULT_BACKGROUND_COLOR_1=$BACKGROUND_COLOR_1" >> $LOCAL_PS1_COLORS_CONFIG
-    echo "DEFAULT_TEXT_COLOR_2=$TEXT_COLOR_2" >> $LOCAL_PS1_COLORS_CONFIG
-    echo "DEFAULT_BACKGROUND_COLOR_2=$BACKGROUND_COLOR_2" >> $LOCAL_PS1_COLORS_CONFIG
+    echo "DEFAULT_COLOR_1=$COLOR_1" >> $LOCAL_PS1_COLORS_CONFIG
+    echo "DEFAULT_COLOR_2=$COLOR_2" >> $LOCAL_PS1_COLORS_CONFIG
+    echo "DEFAULT_COLOR_3=$COLOR_3" >> $LOCAL_PS1_COLORS_CONFIG
+    echo "DEFAULT_COLOR_4=$COLOR_4" >> $LOCAL_PS1_COLORS_CONFIG
     echo -e "\033[01;32mSaved to $LOCAL_PS1_COLORS_CONFIG \033[m \n"
     cat $LOCAL_PS1_COLORS_CONFIG
 }
@@ -207,8 +215,8 @@ set_colors () {
     if [[ $1 = "reset" ]]; then
         my_ps1_colors
         [[ -f $LOCAL_PS1_COLORS_CONFIG && $2 != "init" ]] && source $LOCAL_PS1_COLORS_CONFIG
-        TEXT_COLOR_1=$DEFAULT_TEXT_COLOR_1 ; BACKGROUND_COLOR_1=$DEFAULT_BACKGROUND_COLOR_1
-        TEXT_COLOR_2=$DEFAULT_TEXT_COLOR_2 ; BACKGROUND_COLOR_2=$DEFAULT_BACKGROUND_COLOR_2
+        COLOR_1=$DEFAULT_COLOR_1 ; COLOR_2=$DEFAULT_COLOR_2  ## STYLE_1
+        COLOR_3=$DEFAULT_COLOR_3 ; COLOR_4=$DEFAULT_COLOR_4  ## STYLE_2
         LEADING_SPACE=$DEFAULT_LEADING_SPACE; TRAILING_SPACE=$DEFAULT_TRAILING_SPACE
         set_PS1_colors
         return
@@ -238,12 +246,12 @@ set_colors () {
     C1=${1^^}
     if [[ $C1 =~ ^[0-9]+$ ]]; then
         validate_color_number $C1 || return 1
-        TEXT_COLOR_1=$C1
+        COLOR_1=$C1
     elif [[ $C1 = "_" ]] || [[ $C1 = "CLASSIC" ]]; then
         true
     else
         validate_color_name $C1 || return 1
-        TEXT_COLOR_1=${!C1}  ## Resolve C1 text value to the color number
+        COLOR_1=${!C1}  ## Resolve C1 text value to the color number
     fi
 
     ### Background color 1
@@ -251,19 +259,19 @@ set_colors () {
         C2=${2^^}
         if [[ $C2 =~ ^[0-9]{1,3}$ ]]; then
             validate_color_number $C2 || return 1
-            BACKGROUND_COLOR_1=$C2
+            COLOR_2=$C2
             LEADING_SPACE=" "; TRAILING_SPACE=" "
             if [[ $C2 = 256 ]]; then TRAILING_SPACE=$DEFAULT_TRAILING_SPACE ;fi
         elif [[ $C2 = "_" ]] || [[ $C2 = "CLASSIC" ]]; then
             true
         else
             validate_color_name $C2 || return 1
-            BACKGROUND_COLOR_1=${!C2}
+            COLOR_2=${!C2}
             LEADING_SPACE=" "; TRAILING_SPACE=" "
             if [[ $C2 = "NONE_COLOR" ]]; then TRAILING_SPACE=$DEFAULT_TRAILING_SPACE ;fi
         fi
     else
-        BACKGROUND_COLOR_1=$DEFAULT_BACKGROUND_COLOR_1
+        COLOR_2=$DEFAULT_COLOR_2
         LEADING_SPACE=$DEFAULT_LEADING_SPACE; TRAILING_SPACE=$DEFAULT_TRAILING_SPACE
     fi
 
@@ -272,15 +280,15 @@ set_colors () {
         C3=${3^^}
         if [[ $C3 =~ ^[0-9]{1,3}$ ]]; then
             validate_color_number $C3 || return 1
-            TEXT_COLOR_2=$C3
+            COLOR_3=$C3
         elif [[ $C3 = "_" ]] || [[ $C3 = "CLASSIC" ]]; then
             true
         else
             validate_color_name $C3 || return 1
-            TEXT_COLOR_2=${!C3}
+            COLOR_3=${!C3}
         fi
     else
-        TEXT_COLOR_2=$DEFAULT_TEXT_COLOR_2
+        COLOR_3=$DEFAULT_COLOR_3
     fi
 
     # Background color 2
@@ -288,15 +296,15 @@ set_colors () {
         C4=${4^^}
         if [[ $C4 =~ ^[0-9]{1,3}$ ]]; then
             validate_color_number $C4 || return 1
-            BACKGROUND_COLOR_2=$C4
+            COLOR_4=$C4
         elif [[ $C4 = "_" ]] || [[ $C4 = "CLASSIC" ]]; then
             true
         else
             validate_color_name $C4 || return 1
-            BACKGROUND_COLOR_2=${!C4}
+            COLOR_4=${!C4}
         fi
     else
-        BACKGROUND_COLOR_2=$DEFAULT_BACKGROUND_COLOR_2
+        COLOR_4=$DEFAULT_COLOR_4
     fi
 
     LAST_ARGUMENT="${@: -1}"
