@@ -8,7 +8,7 @@ THIS_FILE="$HOME/.bashrc.d/PS1_colors"
 # COLORS
 
 COLORS=(
-NONE_COLOR=256
+NONE_COLOR=""
 
 ## Base colors
 RED_DARK=1
@@ -75,7 +75,7 @@ MIDDLE_DOT="\[\033[38;5;${GREY_DARK}m\]·${RESET}"
 DEFAULT_LEADING_SPACE=" "
 DEFAULT_TRAILING_SPACE=""
 
-DEFAULT_TEXT_COLOR_1=$GREEN
+DEFAULT_TEXT_COLOR_1=$PISTACHIO
 DEFAULT_BACKGROUND_COLOR_1=$NONE_COLOR
 DEFAULT_TEXT_COLOR_2=$CYAN
 DEFAULT_BACKGROUND_COLOR_2=$NONE_COLOR
@@ -87,8 +87,8 @@ DEFAULT_BACKGROUND_COLOR_2=$NONE_COLOR
 
 display_help () {
     echo -e " \033[4mUsage:\033[0m $ set_colors [COMMAND]
-    or: $ set_colors (text_color_1 | _ ) [background_color_1 | _] [text_color_2 | _] [background_color_2 | _]
-    or: $ <predefined schema name>
+    or: $ set_colors (text_color_1 | _ ) [background_color_1 | _] [text_color_2 | _] [background_color_2 | _] [classic]
+    or: $ <predefined schema name> [classic]
 
     To set PS1 colors, provide at least one color name or number(0-256).
     _ keeps the value of the parameter.
@@ -109,12 +109,15 @@ display_help () {
     \033[4mExamples:\033[0m
         Select colors
             $ set_colors red
+            $ set_colors red classic
             $ set_colors 16 gold black white
             $ set_colors _ _ cyan _
+            $ set_colors _ _ cyan _ classic
 
         Schema
             $ gold
-            $ tea_b     # background color
+            $ gold classic
+            $ tea_b     # black color 1
             $ dir_blue  # path color
 
         Commands
@@ -162,11 +165,23 @@ validate_color_number () {
 }
 
 
-set_PS1_colors () {
+set_PS1_colors_classic () {
     COLOR_1="\[\033[38;5;${TEXT_COLOR_1};48;5;${BACKGROUND_COLOR_1}m\]"
     COLOR_2="\[\033[38;5;${TEXT_COLOR_2};48;5;${BACKGROUND_COLOR_2}m\]"
 
     PS1="\n${COLOR_1}${LEADING_SPACE}\u@\h${TRAILING_SPACE}${RESET}:${COLOR_2}\w${RESET} \n\$${MIDDLE_DOT}"
+}
+
+
+set_PS1_colors () {
+    COLOR_1="\[\033[38;5;${BACKGROUND_COLOR_1};48;5;${TEXT_COLOR_1}m\]"
+    COLOR_2="\[\033[38;5;${BACKGROUND_COLOR_2};48;5;${TEXT_COLOR_2}m\]"
+
+    LEADING_SYMBOL="\[\033[38;5;${TEXT_COLOR_1};48;5;${NONE_COLOR}m\]"     ## \uE0B6
+    DELIMITER="\[\033[38;5;${TEXT_COLOR_1};48;5;${TEXT_COLOR_2}m\]"  ## \uE0BC
+    ENDING_SYMBOL="\[\033[38;5;${TEXT_COLOR_2};48;5;${NONE_COLOR}m\]"      ## \uE0B0
+
+    PS1="\n${LEADING_SYMBOL}${RESET}${COLOR_1}\u@\h${DELIMITER}${RESET}${COLOR_2}\w${RESET}${ENDING_SYMBOL}${RESET}\n\$${MIDDLE_DOT}"
 }
 
 
@@ -219,29 +234,31 @@ set_colors () {
         return
     fi
 
-    # Text color 1
-    if [[ $1 =~ ^[0-9]+$ ]]; then
-        validate_color_number $1 || return 1
-        TEXT_COLOR_1=$1
-    elif [[ $1 = "_" ]]; then
+    ### Text color 1
+    C1=${1^^}
+    if [[ $C1 =~ ^[0-9]+$ ]]; then
+        validate_color_number $C1 || return 1
+        TEXT_COLOR_1=$C1
+    elif [[ $C1 = "_" ]] || [[ $C1 = "CLASSIC" ]]; then
         true
     else
-        validate_color_name $1 || return 1
-        C1=${1^^} && TEXT_COLOR_1=${!C1}
+        validate_color_name $C1 || return 1
+        TEXT_COLOR_1=${!C1}  ## Resolve C1 text value to the color number
     fi
 
-    # Background color 1
+    ### Background color 1
     if [[ -n $2 ]]; then
-        if [[ $2 =~ ^[0-9]{1,3}$ ]]; then
-            validate_color_number $2 || return 1
-            BACKGROUND_COLOR_1=$2
+        C2=${2^^}
+        if [[ $C2 =~ ^[0-9]{1,3}$ ]]; then
+            validate_color_number $C2 || return 1
+            BACKGROUND_COLOR_1=$C2
             LEADING_SPACE=" "; TRAILING_SPACE=" "
-            if [[ $2 = 256 ]]; then TRAILING_SPACE=$DEFAULT_TRAILING_SPACE ;fi
-        elif [[ $2 = "_" ]]; then
+            if [[ $C2 = 256 ]]; then TRAILING_SPACE=$DEFAULT_TRAILING_SPACE ;fi
+        elif [[ $C2 = "_" ]] || [[ $C2 = "CLASSIC" ]]; then
             true
         else
-            validate_color_name $2 || return 1
-            C2=${2^^} && BACKGROUND_COLOR_1=${!C2}
+            validate_color_name $C2 || return 1
+            BACKGROUND_COLOR_1=${!C2}
             LEADING_SPACE=" "; TRAILING_SPACE=" "
             if [[ $C2 = "NONE_COLOR" ]]; then TRAILING_SPACE=$DEFAULT_TRAILING_SPACE ;fi
         fi
@@ -250,16 +267,17 @@ set_colors () {
         LEADING_SPACE=$DEFAULT_LEADING_SPACE; TRAILING_SPACE=$DEFAULT_TRAILING_SPACE
     fi
 
-    # Text color 2
+    ### Text color 2
     if [[ -n $3 ]]; then
-        if [[ $3 =~ ^[0-9]{1,3}$ ]]; then
-            validate_color_number $3 || return 1
-            TEXT_COLOR_2=$3
-        elif [[ $3 = "_" ]]; then
+        C3=${3^^}
+        if [[ $C3 =~ ^[0-9]{1,3}$ ]]; then
+            validate_color_number $C3 || return 1
+            TEXT_COLOR_2=$C3
+        elif [[ $C3 = "_" ]] || [[ $C3 = "CLASSIC" ]]; then
             true
         else
-            validate_color_name $3 || return 1
-            C3=${3^^} && TEXT_COLOR_2=${!C3}
+            validate_color_name $C3 || return 1
+            TEXT_COLOR_2=${!C3}
         fi
     else
         TEXT_COLOR_2=$DEFAULT_TEXT_COLOR_2
@@ -267,20 +285,26 @@ set_colors () {
 
     # Background color 2
     if [[ -n $4 ]]; then
-        if [[ $4 =~ ^[0-9]{1,3}$ ]]; then
-            validate_color_number $4 || return 1
-            BACKGROUND_COLOR_2=$4
-        elif [[ $4 = "_" ]]; then
+        C4=${4^^}
+        if [[ $C4 =~ ^[0-9]{1,3}$ ]]; then
+            validate_color_number $C4 || return 1
+            BACKGROUND_COLOR_2=$C4
+        elif [[ $C4 = "_" ]] || [[ $C4 = "CLASSIC" ]]; then
             true
         else
-            validate_color_name $4 || return 1
-            C4=${4^^} && BACKGROUND_COLOR_2=${!C4}
+            validate_color_name $C4 || return 1
+            BACKGROUND_COLOR_2=${!C4}
         fi
     else
         BACKGROUND_COLOR_2=$DEFAULT_BACKGROUND_COLOR_2
     fi
 
-    set_PS1_colors
+    LAST_ARGUMENT="${@: -1}"
+    if [[ ${LAST_ARGUMENT^^} = "CLASSIC" ]]; then
+        set_PS1_colors_classic
+    else
+        set_PS1_colors
+    fi
 }
 
 
@@ -294,74 +318,74 @@ set_colors reset
 
 schemas=(
 # Text
-"red () { set_colors RED NONE_COLOR CHOCO NONE_COLOR ;}"
-"gold () { set_colors GOLD NONE_COLOR TEA NONE_COLOR ;}"
-"orange () { set_colors ORANGE NONE_COLOR _ _ ;}"
-"amber () { set_colors AMBER NONE_COLOR _ _ ;}"
-"yellow () { set_colors YELLOW_LIGHT NONE_COLOR _ _ ;}"
-"green () { set_colors GREEN NONE_COLOR _ _ ;}"
-"pista () { set_colors PISTACHIO NONE_COLOR CHOCO NONE_COLOR ;}"
-"jade () { set_colors JADE NONE_COLOR ALMOND NONE_COLOR ;}"
-"tea () { set_colors TEA NONE_COLOR _ _ ;}"
-"azure () { set_colors AZURE_LIGHT NONE_COLOR _ _ ;}"
-"blue () { set_colors BLUE_PALE NONE_COLOR CHOCO NONE_COLOR ;}"
-"aqua () { set_colors AQUA NONE_COLOR _ _ ;}"
-"choco () { set_colors CHOCO NONE_COLOR _ _ ;}"
-"almond () { set_colors ALMOND NONE_COLOR BLUE_PALE NONE_COLOR ;}"
-"lavender () { set_colors LAVENDER NONE_COLOR _ _ ;}"
-"indigo () { set_colors INDIGO NONE_COLOR _ _ ;}"
-"violet () { set_colors VIOLET NONE_COLOR _ _ ;}"
-"pink () { set_colors PINK NONE_COLOR _ _ ;}"
-"taffy () { set_colors TAFFY NONE_COLOR _ _ ;}"
-"magenta () { set_colors MAGENTA NONE_COLOR _ _ ;}"
-"rose () { set_colors ROSE NONE_COLOR _ _ ;}"
-"salmon () { set_colors SALMON NONE_COLOR _ _ ;}"
+"red () { set_colors RED NONE_COLOR CHOCO NONE_COLOR \$1 ;}"
+"gold () { set_colors GOLD NONE_COLOR TEA NONE_COLOR \$1 ;}"
+"orange () { set_colors ORANGE NONE_COLOR _ _ \$1 ;}"
+"amber () { set_colors AMBER NONE_COLOR _ _ \$1 ;}"
+"yellow () { set_colors YELLOW_LIGHT NONE_COLOR _ _ \$1 ;}"
+"green () { set_colors GREEN NONE_COLOR _ _ \$1 ;}"
+"pista () { set_colors PISTACHIO NONE_COLOR CHOCO NONE_COLOR \$1 ;}"
+"jade () { set_colors JADE NONE_COLOR ALMOND NONE_COLOR \$1 ;}"
+"tea () { set_colors TEA NONE_COLOR _ _ \$1 ;}"
+"azure () { set_colors AZURE_LIGHT NONE_COLOR _ _ \$1 ;}"
+"blue () { set_colors BLUE_PALE NONE_COLOR CHOCO NONE_COLOR \$1 ;}"
+"aqua () { set_colors AQUA NONE_COLOR _ _ \$1 ;}"
+"choco () { set_colors CHOCO NONE_COLOR _ _ \$1 ;}"
+"almond () { set_colors ALMOND NONE_COLOR BLUE_PALE NONE_COLOR \$1 ;}"
+"lavender () { set_colors LAVENDER NONE_COLOR _ _ \$1 ;}"
+"indigo () { set_colors INDIGO NONE_COLOR _ _ \$1 ;}"
+"violet () { set_colors VIOLET NONE_COLOR _ _ \$1 ;}"
+"pink () { set_colors PINK NONE_COLOR _ _ \$1 ;}"
+"taffy () { set_colors TAFFY NONE_COLOR _ _ \$1 ;}"
+"magenta () { set_colors MAGENTA NONE_COLOR _ _ \$1 ;}"
+"rose () { set_colors ROSE NONE_COLOR _ _ \$1 ;}"
+"salmon () { set_colors SALMON NONE_COLOR _ _ \$1 ;}"
 
 # Backgrounds
-"red_b () { set_colors WHITE RED _ _ ;}"
-"orange_b () { set_colors BLACK ORANGE _ _ ;}"
-"orange_w () { set_colors WHITE ORANGE _ _ ;}"
-"gold_b () { set_colors BLACK GOLD _ _ ;}"
-"amber_b () { set_colors BLACK AMBER _ _ ;}"
-"yellow_b () { set_colors BLACK YELLOW_LIGHT _ _ ;}"
-"green_b () { set_colors BLACK PISTACHIO _ _ ;}"
-"jade_b () { set_colors BLACK JADE _ _ ;}"
-"tea_b () { set_colors BLACK TEA _ _ ;}"
-"choco_w () { set_colors 253 CHOCO _ _ ;}"
-"choco_b () { set_colors BLACK CHOCO _ _ ;}"
-"almond_w () { set_colors 253 ALMOND _ _ ;}"
-"almond_b () { set_colors BLACK ALMOND _ _ ;}"
-"violet_b () { set_colors BLACK VIOLET _ _ ;}"
-"violet_w () { set_colors 254 99 _ _ ;}"
-"indigo_b () { set_colors BLACK INDIGO _ _ ;}"
-"lavender_b () { set_colors BLACK LAVENDER _ _ ;}"
-"azure_b () { set_colors BLACK AZURE_LIGHT _ _ ;}"
-"cyan_w () { set_colors 255 CYAN _ _ ;}"
-"blue_b () { set_colors BLACK BLUE_PALE _ _ ;}"
-"aqua_b () { set_colors BLACK AQUA _ _ ;}"
-"purple_w () { set_colors 254 PURPLE _ _ ;}"
-"taffy_b () { set_colors BLACK TAFFY _ _ ;}"
-"pink_b () { set_colors BLACK PINK _ _ ;}"
-"pink_w () { set_colors 255 PINK _ _ ;}"
-"magenta_b () { set_colors BLACK MAGENTA_LIGHT _ _ _ ;}"
-"rose_b () { set_colors BLACK ROSE _ _ ;}"
-"rose_w () { set_colors 255 ROSE _ _ ;}"
-"salmon_b () { set_colors BLACK SALMON _ _ ;}"
+"red_b () { set_colors WHITE RED _ _ \$1 ;}"
+"orange_b () { set_colors BLACK ORANGE _ _ \$1 ;}"
+"orange_w () { set_colors WHITE ORANGE _ _ \$1 ;}"
+"gold_b () { set_colors BLACK GOLD _ _ \$1 ;}"
+"amber_b () { set_colors BLACK AMBER _ _ \$1 ;}"
+"yellow_b () { set_colors BLACK YELLOW_LIGHT _ _ \$1 ;}"
+"green_b () { set_colors BLACK PISTACHIO _ _ \$1 ;}"
+"jade_b () { set_colors BLACK JADE _ _ \$1 ;}"
+"tea_b () { set_colors BLACK TEA _ _ \$1 ;}"
+"choco_w () { set_colors 253 CHOCO _ _ \$1 ;}"
+"choco_b () { set_colors BLACK CHOCO _ _ \$1 ;}"
+"almond_w () { set_colors 253 ALMOND _ _ \$1 ;}"
+"almond_b () { set_colors BLACK ALMOND _ _ \$1 ;}"
+"violet_b () { set_colors BLACK VIOLET _ _ \$1 ;}"
+"violet_w () { set_colors 254 99 _ _ \$1 ;}"
+"indigo_b () { set_colors BLACK INDIGO _ _ \$1 ;}"
+"lavender_b () { set_colors BLACK LAVENDER _ _ \$1 ;}"
+"azure_b () { set_colors BLACK AZURE_LIGHT _ _ \$1 ;}"
+"cyan_w () { set_colors 255 CYAN _ _ \$1 ;}"
+"blue_b () { set_colors BLACK BLUE_PALE _ _ \$1 ;}"
+"aqua_b () { set_colors BLACK AQUA _ _ \$1 ;}"
+"purple_w () { set_colors 254 PURPLE _ _ \$1 ;}"
+"taffy_b () { set_colors BLACK TAFFY _ _ \$1 ;}"
+"pink_b () { set_colors BLACK PINK _ _ \$1 ;}"
+"pink_w () { set_colors 255 PINK _ _ \$1 ;}"
+"magenta_b () { set_colors BLACK MAGENTA_LIGHT _ _ _ \$1 ;}"
+"rose_b () { set_colors BLACK ROSE _ _ \$1 ;}"
+"rose_w () { set_colors 255 ROSE _ _ \$1 ;}"
+"salmon_b () { set_colors BLACK SALMON _ _ \$1 ;}"
 
 # Path
-"dir_choco () { set_colors _ _ CHOCO NONE_COLOR ;}"
-"dir_almond () { set_colors _ _ ALMOND NONE_COLOR ;}"
-"dir_salmon () { set_colors _ _ SALMON NONE_COLOR ;}"
-"dir_violet () { set_colors _ _ VIOLET NONE_COLOR ;}"
-"dir_indigo () { set_colors _ _ INDIGO NONE_COLOR ;}"
-"dir_lavender () { set_colors _ _ LAVENDER NONE_COLOR ;}"
-"dir_blue () { set_colors _ _ BLUE_PALE NONE_COLOR ;}"
-"dir_aqua () { set_colors _ _ AQUA NONE_COLOR ;}"
-"dir_gold () { set_colors _ _ GOLD NONE_COLOR ;}"
-"dir_yellow () { set_colors _ _ YELLOW_LIGHT NONE_COLOR ;}"
-"dir_pista () { set_colors _ _ PISTACHIO NONE_COLOR ;}"
-"dir_jade () { set_colors _ _ JADE NONE_COLOR ;}"
-"dir_tea () { set_colors _ _ TEA NONE_COLOR ;}"
+"dir_choco () { set_colors _ _ CHOCO NONE_COLOR \$1 ;}"
+"dir_almond () { set_colors _ _ ALMOND NONE_COLOR \$1 ;}"
+"dir_salmon () { set_colors _ _ SALMON NONE_COLOR \$1 ;}"
+"dir_violet () { set_colors _ _ VIOLET NONE_COLOR \$1 ;}"
+"dir_indigo () { set_colors _ _ INDIGO NONE_COLOR \$1 ;}"
+"dir_lavender () { set_colors _ _ LAVENDER NONE_COLOR \$1 ;}"
+"dir_blue () { set_colors _ _ BLUE_PALE NONE_COLOR \$1 ;}"
+"dir_aqua () { set_colors _ _ AQUA NONE_COLOR \$1 ;}"
+"dir_gold () { set_colors _ _ GOLD NONE_COLOR \$1 ;}"
+"dir_yellow () { set_colors _ _ YELLOW_LIGHT NONE_COLOR \$1 ;}"
+"dir_pista () { set_colors _ _ PISTACHIO NONE_COLOR \$1 ;}"
+"dir_jade () { set_colors _ _ JADE NONE_COLOR \$1 ;}"
+"dir_tea () { set_colors _ _ TEA NONE_COLOR \$1 ;}"
 )
 
 
