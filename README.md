@@ -23,11 +23,15 @@ Display help
 Set colors
 
     set_colors red
+    set_colors red classic
     set_colors black gold 16 white
     set_colors _ _ black yellow_light
+    set_colors _ _ cyan _ classic
+    set_colors classic
 
     # Or using a predefined schema
     gold
+    gold classic
     dir_almond
 
 
@@ -52,8 +56,8 @@ To change the initial color schema, edit the "DEFAULTS" section in the `PS1_colo
 
     # .bashrc.d/PS1_colors
 
-    DEFAULT_TEXT_COLOR_1=$BLACK
-    DEFAULT_BACKGROUND_COLOR_1=$GOLD
+    DEFAULT_COLOR_1=$BLACK
+    DEFAULT_COLOR_2=$GOLD
 
 Save current settings as local defaults
 
