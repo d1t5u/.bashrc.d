@@ -1,0 +1,24 @@
+time_str=$(date +"%H:%M:%S")
+line_char="\u2500" ## \u2500 - line # \u2014 - em dash # \u2013 - en dash
+
+TIME_COLOR_DEFAULT=236 # 8
+LINE_COLOR_DEFAULT=233
+TIME_COLOR="${PS0_color:-$TIME_COLOR_DEFAULT}"
+LINE_COLOR="${PS0_color:-$LINE_COLOR_DEFAULT}"
+
+time_separator() {
+    line_len=$(( $(tput cols) - ${#time_str} - 2 ))
+    line=$(printf "${line_char}%.0s" $(seq 1 ${line_len} ))
+    # printf "\e[s\e[G\e[38;5;${LINE_COLOR};49m${line}\e[38;5;${TIME_COLOR};49m\uE0B6\e[38;5;0;48;5;${TIME_COLOR}m%s\e[38;5;${TIME_COLOR};49m\uE0B4\e[0m\e[u\n" "$(date +%H:%M:%S)"
+    export TIME_SEPARATOR="\e[G\e[38;5;${LINE_COLOR};49m${line}\e[38;5;${TIME_COLOR};49m\uE0B6\e[38;5;0;48;5;${TIME_COLOR}m$(date +%H:%M:%S)\e[38;5;${TIME_COLOR};49m\uE0B4\e[0m\n"
+}
+
+## Print separator before PS1
+# PS1='$(time_separator)'"$PS1"
+
+# PS0='$(time_separator)' ## Works incorrectly in the VSCode WSL terminal
+PS0='$(time_separator ;printf "$TIME_SEPARATOR")'
+
+## Alternative:
+# trap time_separator DEBUG
+
