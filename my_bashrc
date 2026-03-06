@@ -1,0 +1,5 @@
+# .bashrc
+
+HISTCONTROL=ignoreboth:erasedups
+HISTSIZE=1000
+HISTFILESIZE=20000
